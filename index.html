@@ -65,6 +65,13 @@ h1{font-family:var(--display);font-weight:800;font-size:44px;letter-spacing:.08e
 /* 結果 */
 .time{font-family:var(--display);font-weight:800;font-size:56px;margin:0;font-variant-numeric:tabular-nums}
 .verdict{font-family:var(--display);font-weight:800;font-size:22px;margin:0}
+.versus{display:flex;align-items:stretch;gap:10px;background:var(--ink2);border-radius:16px;padding:12px;width:min(340px,100%)}
+.versus[hidden]{display:none}
+.versus .side{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:12px}
+.versus .side.win{background:color-mix(in srgb,var(--rope) 18%,transparent);box-shadow:inset 0 0 0 2px var(--rope)}
+.versus .label{color:var(--muted);font-size:12px;font-weight:700}
+.versus .t{font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums}
+.versus .vs{align-self:center;color:var(--muted);font-family:var(--display);font-weight:800;font-size:14px}
 .appbox{background:var(--ink2);border-radius:20px;padding:18px;max-width:360px;display:flex;flex-direction:column;gap:10px;align-items:center}
 .appbox .title{font-family:var(--display);font-weight:800;font-size:18px;margin:0}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--ink);
@@ -109,6 +116,11 @@ h1{font-family:var(--display);font-weight:800;font-size:44px;letter-spacing:.08e
   <p class="time" id="resultTime">0.0秒</p>
   <div class="marks" id="resultMarks"></div>
   <p class="muted">⚡ 1.5秒未満で正解　✅ 正解　❌ 1回以上まちがえた</p>
+  <div class="versus" id="versus" hidden>
+    <div class="side" id="sideRival"><span class="label">友だち</span><span class="t" id="rivalTime">—</span></div>
+    <span class="vs">VS</span>
+    <div class="side" id="sideYou"><span class="label">あなた</span><span class="t" id="youTime">—</span></div>
+  </div>
   <p class="verdict" id="verdict" hidden></p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
     <button class="btn" id="btnShare">結果をシェア</button>
@@ -277,6 +289,11 @@ h1{font-family:var(--display);font-weight:800;font-size:44px;letter-spacing:.08e
       v.hidden = false;
       v.textContent = d > 0.05 ? `勝ち！ 友だちより${d.toFixed(1)}秒はやい` : d < -0.05 ? `あと${(-d).toFixed(1)}秒で勝てた…` : "まさかの同タイム！";
       v.style.color = d > 0.05 ? "var(--rope)" : "var(--text)";
+      $("versus").hidden = false;
+      $("rivalTime").textContent = rival.toFixed(1) + "秒";
+      $("youTime").textContent = accum.toFixed(1) + "秒";
+      $("sideYou").classList.toggle("win", d > 0.05);
+      $("sideRival").classList.toggle("win", d < -0.05);
     }
     show("result");
   }
