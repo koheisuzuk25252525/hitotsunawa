@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>ヒトツナワ きょうの1戦</title>
+<meta name="description" content="まんなかと自分のカードに、同じ絵がひとつだけ。毎日おなじ10問のタイム勝負。">
+<meta property="og:title" content="ヒトツナワ きょうの1戦に挑戦">
+<meta property="og:description" content="友だちと同じ10問で、タイム勝負。ブラウザですぐ遊べます。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#141a2e">
+<!-- App Store公開後に app-id を入れると、iPhoneのSafariで上部にアプリのバナーが出る -->
+<!-- <meta name="apple-itunes-app" content="app-id=0000000000"> -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&display=swap">
+<style>
+:root{
+  --ink:#141a2e; --ink2:#1f2742; --paper:#f3efe4; --line:#3a4466;
+  --text:#e9e6f2; --muted:#9aa2c2; --rope:#d9b46a; --top:#ff7a59; --bottom:#35c4b4; --danger:#ff4f4f;
+  --display:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overflow:hidden;touch-action:manipulation}
+button{font:inherit;color:inherit}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));text-align:center;overflow-y:auto}
+#result,#intro{justify-content:safe center}
+.screen[hidden]{display:none}
+h1{font-family:var(--display);font-weight:800;font-size:44px;letter-spacing:.08em;margin:0;
+  background:linear-gradient(90deg,var(--top),var(--rope),var(--bottom));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kicker{font-family:var(--display);font-weight:800;color:var(--rope);font-size:18px;margin:0}
+.lead{font-weight:700;font-size:16px;line-height:1.7;margin:0}
+.muted{color:var(--muted);font-size:13px;line-height:1.7;margin:0}
+.challenge{background:var(--ink2);border-radius:16px;padding:14px 18px;max-width:340px}
+.challenge b{font-family:var(--display);font-size:28px;color:var(--rope)}
+.btn{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.1em;border:0;border-radius:999px;
+  padding:16px 40px;background:var(--rope);color:var(--ink);cursor:pointer;min-width:220px}
+.btn:active{transform:scale(.96)}
+.btn.sub{background:none;color:var(--text);box-shadow:inset 0 0 0 2px var(--line);font-size:15px;padding:12px 24px;min-width:0}
+.btn.store{background:var(--text);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+  font-size:16px;letter-spacing:.02em;padding:14px 26px;white-space:nowrap}
+.btn.store[aria-disabled=true]{opacity:.5;pointer-events:none}
+.btn:focus-visible{outline:3px solid var(--text);outline-offset:3px}
+.count{font-family:var(--display);font-weight:800;font-size:110px;color:var(--rope);margin:0}
+
+/* プレイ画面 */
+#play{justify-content:space-between;gap:8px}
+.hud{display:flex;flex-direction:column;align-items:center;gap:4px}
+.timer{font-family:var(--display);font-weight:800;font-size:52px;font-variant-numeric:tabular-nums;line-height:1}
+.marks{font-size:20px;height:26px}
+.card{position:relative;border-radius:50%;background:var(--paper);flex:none;
+  box-shadow:0 0 0 5px var(--ink2),0 0 0 7px var(--ring,var(--rope))}
+.card.frozen{filter:grayscale(1) brightness(.7)}
+.card.frozen::after{content:"✕ 1秒";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);
+  font-weight:800;font-size:26px;color:#fff;text-shadow:0 2px 8px #000}
+.sym{position:absolute;transform:translate(-50%,-50%) rotate(var(--r)) scale(var(--s));border:0;background:none;padding:0;
+  line-height:1;cursor:pointer;transition:transform .1s}
+.sym.hit{transform:translate(-50%,-50%) rotate(var(--r)) scale(calc(var(--s)*1.45));filter:drop-shadow(0 0 6px #fff)}
+.mid .sym{cursor:default}
+.you{font-family:var(--display);font-weight:800;color:var(--bottom);font-size:15px;margin:0}
+
+/* 結果 */
+.time{font-family:var(--display);font-weight:800;font-size:56px;margin:0;font-variant-numeric:tabular-nums}
+.verdict{font-family:var(--display);font-weight:800;font-size:22px;margin:0}
+.appbox{background:var(--ink2);border-radius:20px;padding:18px;max-width:360px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.appbox .title{font-family:var(--display);font-weight:800;font-size:18px;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--ink);
+  font-weight:700;padding:10px 18px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.sym{transition:none}}
+</style>
+</head>
+<body>
+
+<section class="screen" id="intro">
+  <h1>ヒトツナワ</h1>
+  <p class="kicker" id="introNo">きょうの1戦</p>
+  <div class="challenge" id="challenge" hidden>
+    <p class="muted">友だちのタイム</p>
+    <b id="challengeTime">—</b><span class="muted"> 秒</span>
+    <p class="muted">おなじ10問で勝負！</p>
+  </div>
+  <p class="lead">まんなかのカードと下のあなたのカード。<br>同じ絵がひとつだけあります。<br>見つけたら、下のカードでタップ！</p>
+  <p class="muted">まちがえると1秒止まります。10問のタイム勝負。</p>
+  <button class="btn" id="btnStart">スタート</button>
+</section>
+
+<section class="screen" id="countdown" hidden><p class="count" id="countNum">3</p></section>
+
+<section class="screen" id="play" hidden>
+  <div class="hud">
+    <p class="kicker" id="playNo">きょうの1戦</p>
+    <div class="timer" id="timer">0.0</div>
+    <p class="muted" id="progress">1 / 10</p>
+    <div class="marks" id="marks"></div>
+  </div>
+  <div class="card mid" id="cardMid" aria-label="まんなかのカード"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="card" id="cardYou" style="--ring:var(--bottom)" aria-label="あなたのカード"></div>
+    <p class="you">あなた</p>
+  </div>
+</section>
+
+<section class="screen" id="result" hidden>
+  <p class="kicker" id="resultNo">きょうの1戦</p>
+  <p class="time" id="resultTime">0.0秒</p>
+  <div class="marks" id="resultMarks"></div>
+  <p class="muted">⚡ 1.5秒未満で正解　✅ 正解　❌ 1回以上まちがえた</p>
+  <p class="verdict" id="verdict" hidden></p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <button class="btn" id="btnShare">結果をシェア</button>
+    <button class="btn sub" id="btnAgain">もう一回</button>
+  </div>
+  <div class="appbox">
+    <p class="title">アプリなら、ふたりで綱引き対戦</p>
+    <p class="muted">1台のiPhoneを机に置いて、向かい合って早いもの勝ち。CPU対戦や毎日の記録も。無料です。</p>
+    <a class="btn store" id="btnStore" href="#" aria-disabled="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.4c.9-1.4 1.3-2.7 1.3-2.8 0 0-2.4-1-2.4-4zM14 5.5c.7-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.5 2.8-1.3z"/></svg>
+      <span id="storeLabel">App Storeで近日公開</span>
+    </a>
+  </div>
+</section>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+(() => {
+  // ===== 設定 =====
+  // App Storeで公開されたら、App Store ConnectのApple ID（数字）を入れる
+  const APP_STORE_ID = "";
+  const PAGE_URL = "https://koheisuzuk25252525.github.io/hitotsunawa/";
+
+  // ===== アプリ（Swift）と同じ手順。片方を変えたら、もう片方も変えること =====
+  const SYMS = ["🍎","🐟","🌵","⚓","🎈","🔑","🌙","⭐","🍄","🐢","🎸","🚲","🔥","💧","🍋","🦋","🎲","🧲","🌻","🐙","🍩","⛄","🚀","🎁","🦊","🍉","🔔","🐝","🌈","🧀","🎩"];
+  const COUNT = 10;
+  const P = 5, CARDS = [];
+  for (let m = 0; m < P; m++) for (let b = 0; b < P; b++) {
+    const c = []; for (let x = 0; x < P; x++) c.push(x * P + (m * x + b) % P); c.push(P * P + m); CARDS.push(c);
+  }
+  for (let x = 0; x < P; x++) { const c = []; for (let y = 0; y < P; y++) c.push(x * P + y); c.push(P * P + P); CARDS.push(c); }
+  { const c = []; for (let i = P * P; i <= P * P + P; i++) c.push(i); CARDS.push(c); }
+
+  const M64 = (1n << 64n) - 1n;
+  class Gen {
+    constructor(seed) { this.s = seed & M64; }
+    next() {
+      this.s = (this.s + 0x9E3779B97F4A7C15n) & M64;
+      let z = this.s;
+      z = ((z ^ (z >> 30n)) * 0xBF58476D1CE4E5B9n) & M64;
+      z = ((z ^ (z >> 27n)) * 0x94D049BB133111EBn) & M64;
+      return z ^ (z >> 31n);
+    }
+    int(n) { return Number(this.next() % BigInt(n)); }
+    unit() { return Number(this.next() >> 11n) / 9007199254740992; }
+    shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = this.int(i + 1); [a[i], a[j]] = [a[j], a[i]]; } }
+  }
+  function dealCard(symbols, g) {
+    const offset = g.unit() * 2 * Math.PI;
+    const pos = [[0.5, 0.5]];
+    for (let i = 0; i < 5; i++) { const a = offset + i * 2 * Math.PI / 5; pos.push([0.5 + 0.31 * Math.cos(a), 0.5 + 0.31 * Math.sin(a)]); }
+    g.shuffle(pos);
+    return symbols.map((s, i) => ({ id: s, x: pos[i][0], y: pos[i][1], angle: g.unit() * 360, scale: 0.75 + g.unit() * 0.4 }));
+  }
+  function makeRounds(day) {
+    const g = new Gen((BigInt(day) * 0x9E3779B97F4A7C15n + 0x4849544Fn) & M64);
+    const out = [];
+    for (let r = 0; r < COUNT; r++) {
+      const ids = CARDS.map((_, i) => i);
+      g.shuffle(ids);
+      const hand = dealCard(CARDS[ids[0]], g);
+      const center = dealCard(CARDS[ids[1]], g);
+      out.push({ hand, center });
+    }
+    return out;
+  }
+  window.__hitotsunawa = { makeRounds, CARDS }; // 照合テスト用
+
+  // ===== 日付 =====
+  function todayKey() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+  function keyToDate(k) { return new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100); }
+  function dayNumber(k) { return Math.max(1, Math.round((keyToDate(k) - new Date(2026, 10, 1)) / 86400000) + 1); }
+  const params = new URLSearchParams(location.search);
+  let day = parseInt(params.get("d"), 10);
+  if (!(day >= 20261101 && day <= 21001231) || isNaN(keyToDate(day))) day = todayKey();
+  const rival = parseFloat(params.get("t"));
+  const hasRival = rival > 0 && rival < 600;
+  const no = `きょうの1戦 #${dayNumber(day)}`;
+
+  // ===== 画面 =====
+  const $ = id => document.getElementById(id);
+  const show = id => ["intro", "countdown", "play", "result"].forEach(s => $(s).hidden = s !== id);
+  ["introNo", "playNo", "resultNo"].forEach(id => $(id).textContent = no);
+  if (hasRival) { $("challenge").hidden = false; $("challengeTime").textContent = rival.toFixed(1); }
+  const store = $("btnStore");
+  if (APP_STORE_ID) {
+    store.href = `https://apps.apple.com/jp/app/id${APP_STORE_ID}`;
+    store.removeAttribute("aria-disabled");
+    $("storeLabel").textContent = "App Storeで無料ダウンロード";
+  }
+
+  function sizeCards() {
+    const w = Math.min(window.innerWidth - 48, 380), h = window.innerHeight;
+    const mid = Math.min(w * 0.62, h * 0.27), you = Math.min(w * 0.82, h * 0.36);
+    for (const [id, s] of [["cardMid", mid], ["cardYou", you]]) { $(id).style.width = $(id).style.height = s + "px"; $(id).dataset.size = s; }
+  }
+  window.addEventListener("resize", sizeCards);
+
+  function render(el, card, tappable) {
+    el.innerHTML = "";
+    const size = parseFloat(el.dataset.size);
+    for (const p of card) {
+      const b = document.createElement(tappable ? "button" : "span");
+      b.className = "sym"; b.textContent = SYMS[p.id]; b.dataset.id = p.id;
+      b.style.left = p.x * 100 + "%"; b.style.top = p.y * 100 + "%";
+      b.style.fontSize = size * 0.19 + "px";
+      b.style.setProperty("--r", p.angle + "deg"); b.style.setProperty("--s", p.scale);
+      if (tappable) { b.type = "button"; b.setAttribute("aria-label", SYMS[p.id]); b.addEventListener("pointerdown", e => { e.preventDefault(); tap(p.id, b); }); }
+      el.appendChild(b);
+    }
+  }
+
+  // ===== 進行 =====
+  let rounds, index, marks, accum, roundStart, missed, locked, frozen, timerId;
+  const common = (a, b) => a.find(x => b.some(y => y.id === x.id)).id;
+
+  function start() {
+    rounds = makeRounds(day); index = 0; marks = []; accum = 0; roundStart = null; locked = true; frozen = false;
+    $("marks").textContent = ""; $("timer").textContent = "0.0";
+    sizeCards(); show("countdown");
+    let n = 3; $("countNum").textContent = n;
+    const t = setInterval(() => {
+      n--;
+      if (n > 0) { $("countNum").textContent = n; return; }
+      clearInterval(t); show("play"); deal();
+      timerId = setInterval(() => { $("timer").textContent = elapsed().toFixed(1); }, 100);
+    }, 600);
+  }
+  const elapsed = () => accum + (roundStart ? (performance.now() - roundStart) / 1000 : 0);
+
+  function deal() {
+    const r = rounds[index];
+    render($("cardMid"), r.center, false);
+    render($("cardYou"), r.hand, true);
+    $("progress").textContent = `${index + 1} / ${COUNT}`;
+    missed = false; locked = false; roundStart = performance.now();
+  }
+
+  function tap(id, btn) {
+    if (locked || frozen) return;
+    const r = rounds[index];
+    if (id !== common(r.hand, r.center)) {
+      missed = true; frozen = true; $("cardYou").classList.add("frozen");
+      if (navigator.vibrate) navigator.vibrate(120);
+      setTimeout(() => { frozen = false; $("cardYou").classList.remove("frozen"); }, 1000);
+      return;
+    }
+    locked = true;
+    const t = (performance.now() - roundStart) / 1000;
+    accum += t; roundStart = null;
+    marks.push(missed ? "❌" : t < 1.5 ? "⚡" : "✅");
+    $("marks").textContent = marks.join("");
+    btn.classList.add("hit");
+    const m = $("cardMid").querySelector(`[data-id="${id}"]`); if (m) m.classList.add("hit");
+    index++;
+    setTimeout(() => index >= COUNT ? finish() : deal(), index >= COUNT ? 500 : 320);
+  }
+
+  function finish() {
+    clearInterval(timerId);
+    $("resultTime").textContent = accum.toFixed(1) + "秒";
+    $("resultMarks").textContent = marks.join("");
+    if (hasRival) {
+      const d = rival - accum, v = $("verdict");
+      v.hidden = false;
+      v.textContent = d > 0.05 ? `勝ち！ 友だちより${d.toFixed(1)}秒はやい` : d < -0.05 ? `あと${(-d).toFixed(1)}秒で勝てた…` : "まさかの同タイム！";
+      v.style.color = d > 0.05 ? "var(--rope)" : "var(--text)";
+    }
+    show("result");
+  }
+
+  function shareText() {
+    const url = `${PAGE_URL}?d=${day}&t=${accum.toFixed(1)}`;
+    return { text: `ヒトツナワ ${no}\n⏱ ${accum.toFixed(1)}秒\n${marks.join("")}\nおなじ10問に挑戦👇`, url };
+  }
+  async function share() {
+    const { text, url } = shareText();
+    if (navigator.share) { try { await navigator.share({ text, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); toast("コピーしました"); }
+    catch (e) { prompt("この文をコピーしてください", `${text}\n${url}`); }
+  }
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1600); }
+
+  $("btnStart").addEventListener("click", start);
+  $("btnAgain").addEventListener("click", start);
+  $("btnShare").addEventListener("click", share);
+  show("intro");
+})();
+</script>
+</body>
+</html>
